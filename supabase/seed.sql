@@ -1,0 +1,3 @@
+-- Intentionally empty and idempotent.
+-- Users and initial workspace membership must be bootstrapped by a controlled,
+-- environment-aware process. Never place emails, passwords or tokens here.
