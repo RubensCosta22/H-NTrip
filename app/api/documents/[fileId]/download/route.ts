@@ -29,5 +29,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ fil
     .from("trip-documents")
     .createSignedUrl(file.storage_path, 60, { download: file.original_filename });
   if (error || !data?.signedUrl) return new NextResponse("Download indisponível.", { status: 503 });
-  return NextResponse.redirect(data.signedUrl);
+
+  const response = NextResponse.redirect(data.signedUrl);
+  response.headers.set("Cache-Control", "private, no-store");
+  response.headers.set("Referrer-Policy", "no-referrer");
+  return response;
 }
