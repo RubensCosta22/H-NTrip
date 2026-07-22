@@ -18,7 +18,7 @@ export async function requireCurrentMember(): Promise<CurrentMember> {
     redirect("/login");
   }
 
-  const { data: membership } = await supabase
+  const { data: membership, error: membershipError } = await supabase
     .from("workspace_members")
     .select("workspace_id, role")
     .eq("user_id", user.id)
@@ -26,6 +26,10 @@ export async function requireCurrentMember(): Promise<CurrentMember> {
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
+
+  if (membershipError) {
+    throw new Error("Unable to verify active workspace membership.");
+  }
 
   if (!membership) {
     await supabase.auth.signOut();
