@@ -12,6 +12,8 @@ jobs:
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      APP_URL: https://ci.hntrip.invalid
     steps:
       - name: Checkout
         uses: actions/checkout@v4
