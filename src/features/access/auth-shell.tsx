@@ -13,9 +13,9 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
       </header>
       <section className="auth-content">
         <div className="auth-hero">
-          <p className="eyebrow">Planejamento compartilhado</p>
-          <h1>Sua próxima viagem começa aqui.</h1>
-          <p>Planeje, compartilhe e viva cada detalhe em um só lugar.</p>
+          <p className="eyebrow">Planeje · viaje · lembre</p>
+          <h1>Sua viagem. Todos os detalhes.</h1>
+          <p>Roteiro, reservas, orçamento, documentos e memórias em um só lugar.</p>
         </div>
         {children}
       </section>
