@@ -1,0 +1,269 @@
+/* H&NTrip brand system — workspace refinements.
+   This layer intentionally sits after globals.css so existing functional layouts
+   inherit the refreshed design without duplicating application logic. */
+
+:root {
+  --hn-panel: rgba(12, 39, 64, .82);
+  --hn-panel-soft: rgba(10, 31, 51, .72);
+  --hn-panel-muted: rgba(7, 21, 37, .46);
+  --hn-line: rgba(220, 237, 247, .11);
+  --hn-line-strong: rgba(99, 211, 226, .25);
+  --hn-text: #f5f9fc;
+  --hn-muted: #9db1c3;
+  --hn-subtle: #7890a5;
+  --hn-cyan: #63d3e2;
+  --hn-aqua: #8cdee8;
+  --hn-sand: #f0c77e;
+  --hn-mint: #79dfbd;
+  --hn-danger: #ffb4aa;
+  --hn-radius-lg: 1.35rem;
+  --hn-radius-md: .9rem;
+  --hn-shadow-soft: 0 1.4rem 3.5rem rgba(0, 0, 0, .16);
+}
+
+/* Shared hierarchy */
+.finance-page,
+.checklist-page,
+.documents-page,
+.photos-page,
+.places-page {
+  display: grid;
+  align-content: start;
+  gap: 0;
+}
+
+.finance-page .page-heading,
+.checklist-page .page-heading,
+.documents-page .page-heading,
+.photos-page .page-heading,
+.places-page .page-heading {
+  max-width: 52rem;
+}
+
+.finance-page .page-heading h1,
+.checklist-page .page-heading h1,
+.documents-page .page-heading h1,
+.photos-page .page-heading h1,
+.places-page .page-heading h1 {
+  max-width: 12ch;
+}
+
+/* Finance: turn the summary into an editorial strip rather than four cards. */
+.finance-summary {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.15fr 1fr 1fr .8fr;
+  gap: 0;
+  overflow: hidden;
+  margin-top: 2.75rem;
+  border: 1px solid var(--hn-line);
+  border-radius: var(--hn-radius-lg);
+  background: linear-gradient(135deg, rgba(17, 53, 84, .8), rgba(7, 24, 41, .92));
+  box-shadow: var(--hn-shadow-soft);
+}
+
+.finance-summary article {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .8rem;
+  align-items: center;
+  min-width: 0;
+  padding: 1.35rem 1.45rem 1.65rem;
+  border: 0;
+  border-right: 1px solid var(--hn-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.finance-summary article:last-of-type { border-right: 0; }
+.finance-summary article svg { color: var(--hn-cyan); }
+.finance-summary article span { display: block; color: var(--hn-subtle); font-size: .7rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+.finance-summary article strong { display: block; overflow: hidden; margin-top: .3rem; color: var(--hn-text); font-size: clamp(1.05rem, 2vw, 1.55rem); text-overflow: ellipsis; white-space: nowrap; }
+.finance-summary article.negative svg,
+.finance-summary article.negative strong { color: var(--hn-danger); }
+.finance-summary .budget-progress { position: absolute; right: 0; bottom: 0; left: 0; height: .34rem; border-radius: 0; background: rgba(255,255,255,.05); }
+.finance-summary .budget-progress span { background: linear-gradient(90deg, var(--hn-cyan), var(--hn-sand)); }
+
+.finance-layout { grid-template-columns: minmax(0, 1fr) minmax(17rem, 20rem); gap: clamp(1.25rem, 3vw, 2.5rem); }
+.finance-main > .section-heading:first-child { margin-bottom: -.15rem; }
+.finance-form-surface {
+  border-color: var(--hn-line);
+  border-radius: var(--hn-radius-lg);
+  background: linear-gradient(155deg, rgba(12, 39, 64, .88), rgba(8, 27, 46, .78));
+  box-shadow: var(--hn-shadow-soft);
+}
+
+.expense-list { gap: 0; overflow: hidden; border: 1px solid var(--hn-line); border-radius: var(--hn-radius-lg); background: var(--hn-panel-soft); }
+.expense-row { border: 0; border-bottom: 1px solid var(--hn-line); border-radius: 0; background: transparent; transition: background .18s ease, transform .18s ease; }
+.expense-row:last-child { border-bottom: 0; }
+.expense-row:hover { background: rgba(255,255,255,.025); }
+.expense-row p { color: var(--hn-subtle); }
+.expense-row time { color: var(--hn-muted); }
+.expense-amount { color: var(--hn-sand); }
+.category-panel { position: sticky; top: 10rem; border-color: var(--hn-line); border-radius: var(--hn-radius-lg); background: linear-gradient(160deg, rgba(12, 39, 64, .9), rgba(8, 27, 46, .85)); box-shadow: var(--hn-shadow-soft); }
+.category-list { border-color: var(--hn-line); }
+
+/* Checklist: progress becomes the hero, lists become calm workspaces. */
+.checklist-overview {
+  grid-template-columns: minmax(12rem, auto) 1fr;
+  gap: clamp(1rem, 3vw, 2rem);
+  margin-top: 2.75rem;
+  padding: 1.35rem 1.5rem;
+  border-color: var(--hn-line-strong);
+  border-radius: var(--hn-radius-lg);
+  background: linear-gradient(110deg, rgba(20, 61, 86, .68), rgba(9, 32, 51, .84));
+  box-shadow: var(--hn-shadow-soft);
+}
+.checklist-overview article { gap: 1rem; }
+.checklist-overview article svg { width: 2rem; height: 2rem; color: var(--hn-mint); }
+.checklist-overview strong { font-size: clamp(1.35rem, 3vw, 2rem); letter-spacing: -.035em; }
+.checklist-progress { height: .72rem; background: rgba(255,255,255,.07); }
+.checklist-progress span { background: linear-gradient(90deg, var(--hn-cyan), var(--hn-mint)); }
+
+.new-checklist-panel {
+  grid-template-columns: minmax(11rem, .42fr) minmax(0, 1fr);
+  gap: 2rem;
+  padding: 1.35rem 1.5rem;
+  border-color: var(--hn-line);
+  border-radius: var(--hn-radius-lg);
+  background: var(--hn-panel-soft);
+}
+.checklist-boards { gap: 1.5rem; }
+.checklist-board { border-color: var(--hn-line); border-radius: var(--hn-radius-lg); background: rgba(10, 31, 51, .74); box-shadow: 0 .8rem 2rem rgba(0,0,0,.08); }
+.checklist-board > header { padding: 1.4rem 1.55rem; border-color: var(--hn-line); background: linear-gradient(90deg, rgba(99,211,226,.055), transparent 55%); }
+.checklist-items { gap: 0; padding: 0; }
+.checklist-item { padding: 1rem 1.35rem; border: 0; border-bottom: 1px solid var(--hn-line); border-radius: 0; background: transparent; }
+.checklist-item:last-child { border-bottom: 0; }
+.checklist-item.completed { opacity: .58; background: rgba(121,223,189,.025); }
+.completion-toggle { background: rgba(99,211,226,.07); }
+.checklist-item.completed .completion-toggle { color: #071525; background: var(--hn-mint); }
+.activity-disclosure { border-color: var(--hn-line); }
+.activity-disclosure summary { color: var(--hn-aqua); }
+
+/* Documents: less card-wall, clearer lifecycle and stronger file affordances. */
+.document-summary,
+.photo-summary,
+.place-summary {
+  gap: 0;
+  overflow: hidden;
+  margin-top: 2.75rem;
+  border: 1px solid var(--hn-line);
+  border-radius: var(--hn-radius-lg);
+  background: var(--hn-panel-soft);
+}
+.document-summary article,
+.photo-summary article,
+.place-summary article {
+  min-width: 0;
+  padding: 1.35rem 1.45rem;
+  border: 0;
+  border-right: 1px solid var(--hn-line);
+  border-radius: 0;
+  background: transparent;
+}
+.document-summary article:last-child,
+.photo-summary article:last-child,
+.place-summary article:last-child { border-right: 0; }
+
+.new-document-panel,
+.photo-upload-panel,
+.new-place-panel {
+  margin-top: 1.75rem;
+  padding: clamp(1.25rem, 3vw, 1.75rem);
+  border-color: var(--hn-line);
+  border-radius: var(--hn-radius-lg);
+  background: linear-gradient(155deg, rgba(12, 39, 64, .83), rgba(8, 27, 46, .72));
+  box-shadow: var(--hn-shadow-soft);
+}
+
+.document-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; margin-top: 1.75rem; }
+.document-card {
+  min-height: 18rem;
+  padding: 1.45rem;
+  border-color: var(--hn-line);
+  border-radius: var(--hn-radius-lg);
+  background: linear-gradient(155deg, rgba(12, 39, 64, .86), rgba(7, 24, 41, .9));
+  box-shadow: 0 1rem 2.4rem rgba(0,0,0,.1);
+}
+.document-card.expiring { border-color: rgba(240,199,126,.28); }
+.document-card.expired { border-color: rgba(255,180,170,.28); }
+.document-files a { border: 1px solid rgba(99,211,226,.08); border-radius: .65rem; background: rgba(99,211,226,.055); }
+.document-upload { border-color: rgba(220,237,247,.14); border-radius: .8rem; background: rgba(7,21,37,.24); }
+
+/* Photos: give media more room and reduce chrome around it. */
+.photo-grid { gap: .8rem; }
+.photo-card { overflow: hidden; border-color: var(--hn-line); border-radius: var(--hn-radius-lg); background: rgba(8, 27, 46, .82); box-shadow: 0 1rem 2.6rem rgba(0,0,0,.11); }
+.photo-card img { transition: transform .35s ease; }
+.photo-card:hover img { transform: scale(1.018); }
+.photo-card footer { border-color: var(--hn-line); }
+
+/* Places & reservations: more travel-guide, less dashboard. */
+.place-filters { gap: .55rem; margin-top: 1.75rem; scrollbar-width: none; }
+.place-filters::-webkit-scrollbar { display: none; }
+.place-filters a { min-height: 2.55rem; padding: 0 .9rem; border-color: var(--hn-line); background: rgba(255,255,255,.018); }
+.place-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.15rem; margin-top: 1.25rem; }
+.place-card { padding: 1.35rem; border-color: var(--hn-line); border-radius: var(--hn-radius-lg); background: linear-gradient(155deg, rgba(12,39,64,.82), rgba(8,27,46,.78)); box-shadow: 0 1rem 2.6rem rgba(0,0,0,.09); }
+.place-card h2 { margin: 1rem 0 .75rem; font-size: 1.3rem; letter-spacing: -.025em; }
+.reservation-reference { border: 1px solid rgba(240,199,126,.13); border-radius: .75rem; background: rgba(240,199,126,.045); }
+.place-costs span { border: 1px solid rgba(220,237,247,.06); border-radius: .7rem; background: rgba(7,21,37,.28); }
+.place-card footer a { border: 1px solid rgba(99,211,226,.09); border-radius: 999px; background: rgba(99,211,226,.055); }
+
+/* Responsive density for use while travelling. */
+@media (max-width: 980px) {
+  .finance-summary { grid-template-columns: repeat(2, 1fr); }
+  .finance-summary article:nth-of-type(2) { border-right: 0; }
+  .finance-summary article:nth-of-type(-n+2) { border-bottom: 1px solid var(--hn-line); }
+  .finance-layout { grid-template-columns: 1fr; }
+  .category-panel { position: static; }
+  .document-grid, .place-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 700px) {
+  .finance-summary,
+  .document-summary,
+  .photo-summary,
+  .place-summary { grid-template-columns: 1fr; border-radius: 1rem; }
+
+  .finance-summary article,
+  .document-summary article,
+  .photo-summary article,
+  .place-summary article {
+    min-height: 4.4rem;
+    padding: 1rem 1.1rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--hn-line);
+  }
+  .finance-summary article:last-of-type,
+  .document-summary article:last-child,
+  .photo-summary article:last-child,
+  .place-summary article:last-child { border-bottom: 0; }
+
+  .finance-summary article:nth-of-type(2) { border-right: 0; }
+  .finance-summary article:nth-of-type(-n+2) { border-bottom: 1px solid var(--hn-line); }
+
+  .expense-row {
+    grid-template-columns: auto minmax(0,1fr) auto;
+    gap: .65rem;
+    padding: 1rem;
+  }
+  .expense-row time { grid-column: 2; }
+  .expense-amount { grid-column: 2; }
+  .expense-row > form { grid-column: 3; grid-row: 1 / span 3; align-self: center; }
+
+  .checklist-overview,
+  .new-checklist-panel { grid-template-columns: 1fr; }
+  .checklist-item { grid-template-columns: auto minmax(0,1fr); }
+  .checklist-item-actions { grid-column: 2; justify-content: flex-start; }
+
+  .document-card,
+  .place-card { border-radius: 1rem; }
+
+  .photo-card:hover img { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo-card img,
+  .expense-row { transition: none; }
+  .photo-card:hover img { transform: none; }
+}
