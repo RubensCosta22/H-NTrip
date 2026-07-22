@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createServerSupabaseClient } from "@/src/lib/supabase/server";
 import { isSupabaseConfigured } from "@/src/lib/supabase/config";
+import { getAppUrl } from "@/src/lib/app-url";
 
 const loginSchema = z.object({
   email: z.string().trim().email().max(254),
@@ -85,7 +86,7 @@ export async function requestPasswordResetAction(
 
   if (isSupabaseConfigured()) {
     const supabase = await createServerSupabaseClient();
-    const appUrl = process.env.APP_URL ?? "http://localhost:3000";
+    const appUrl = getAppUrl();
     await supabase.auth.resetPasswordForEmail(parsed.data, {
       redirectTo: `${appUrl}/auth/callback?next=/update-password`,
     });
