@@ -4,6 +4,12 @@ import { getSupabasePublicConfig, isSupabaseConfigured } from "@/src/lib/supabas
 
 export async function proxy(request: NextRequest) {
   if (!isSupabaseConfigured()) {
+    if (process.env.NODE_ENV === "production") {
+      return new NextResponse("Service unavailable", {
+        status: 503,
+        headers: { "Cache-Control": "no-store" },
+      });
+    }
     return NextResponse.next({ request });
   }
 
