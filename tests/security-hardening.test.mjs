@@ -19,11 +19,15 @@ test("production URLs fail closed and require HTTPS", async () => {
   assert.doesNotMatch(inviteActions, /process\.env\.APP_URL\s*\?\?/);
 });
 
-test("missing production Supabase configuration returns 503", async () => {
-  const proxy = await read("proxy.ts");
-  assert.match(proxy, /process\.env\.NODE_ENV === "production"/);
-  assert.match(proxy, /status:\s*503/);
-  assert.match(proxy, /Cache-Control":\s*"no-store"/);
+test("missing Supabase configuration remains build-safe", async () => {
+  const [proxy, readiness] = await Promise.all([
+    read("proxy.ts"),
+    read("app/api/health/readiness/route.ts"),
+  ]);
+  assert.match(proxy, /if \(!isSupabaseConfigured\(\)\)/);
+  assert.match(proxy, /NextResponse\.next\(\{ request \}\)/);
+  assert.match(readiness, /status:\s*"degraded"/);
+  assert.match(readiness, /status:\s*503/);
 });
 
 test("baseline browser hardening headers remain enabled", async () => {
