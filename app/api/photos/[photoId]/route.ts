@@ -17,5 +17,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ phot
   const { data, error } = await supabase.storage.from("trip-photos")
     .createSignedUrl(photo.storage_path, 60, download ? { download: photo.original_filename } : undefined);
   if (error || !data?.signedUrl) return new NextResponse("Imagem indisponível.", { status: 503 });
-  return NextResponse.redirect(data.signedUrl);
+
+  const response = NextResponse.redirect(data.signedUrl);
+  response.headers.set("Cache-Control", "private, no-store");
+  response.headers.set("Referrer-Policy", "no-referrer");
+  return response;
 }
