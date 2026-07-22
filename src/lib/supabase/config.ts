@@ -29,7 +29,8 @@ function assertPublicSupabaseKey(key: string) {
 
   try {
     const normalized = jwtPayload.replace(/-/g, "+").replace(/_/g, "/");
-    const decoded = JSON.parse(Buffer.from(normalized, "base64").toString("utf8")) as { role?: string };
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    const decoded = JSON.parse(atob(padded)) as { role?: string };
     if (decoded.role === "service_role") {
       throw new Error("A Supabase service-role key must never be exposed through NEXT_PUBLIC_* variables.");
     }
