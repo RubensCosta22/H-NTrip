@@ -19,6 +19,14 @@ const categoryLabels: Record<string, string> = {
 };
 const formatDate = (value: string) => new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`));
 const formatMoney = (value: number | string | null, currency: string) => value === null ? "—" : new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(Number(value));
+const isSafeWebUrl = (value: string) => {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+};
 
 export default async function PlacesPage({ params, searchParams }: PlacesPageProps) {
   const { tripId } = await params;
@@ -68,7 +76,7 @@ export default async function PlacesPage({ params, searchParams }: PlacesPagePro
         {place.reservation_code && <div className="reservation-reference"><span>Reserva</span><strong>{place.reservation_code}</strong></div>}
         <div className="place-costs"><span>Previsto <strong>{formatMoney(place.planned_cost, trip.base_currency)}</strong></span><span>Realizado <strong>{formatMoney(place.actual_cost, trip.base_currency)}</strong></span></div>
         {place.notes && <small>{place.notes}</small>}
-        <footer><div>{place.phone && <a href={`tel:${place.phone}`}><Phone aria-hidden="true" size={15} /> Ligar</a>}{place.website && <a href={place.website} target="_blank" rel="noreferrer"><ExternalLink aria-hidden="true" size={15} /> Site</a>}</div><form action={archiveTripPlaceAction}><input name="tripId" type="hidden" value={trip.id} /><input name="placeId" type="hidden" value={place.id} /><button aria-label={`Arquivar ${place.name}`} type="submit"><Archive aria-hidden="true" size={16} /></button></form></footer>
+        <footer><div>{place.phone && <a href={`tel:${place.phone}`}><Phone aria-hidden="true" size={15} /> Ligar</a>}{place.website && isSafeWebUrl(place.website) && <a href={place.website} target="_blank" rel="noreferrer"><ExternalLink aria-hidden="true" size={15} /> Site</a>}</div><form action={archiveTripPlaceAction}><input name="tripId" type="hidden" value={trip.id} /><input name="placeId" type="hidden" value={place.id} /><button aria-label={`Arquivar ${place.name}`} type="submit"><Archive aria-hidden="true" size={16} /></button></form></footer>
       </article>) : <div className="empty-state place-empty"><MapPinned aria-hidden="true" /><h2>Nenhum local nesta categoria</h2><p>Adicione a primeira hospedagem, restaurante ou atração da viagem.</p></div>}
     </section>
   </main>;

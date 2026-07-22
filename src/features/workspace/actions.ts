@@ -26,8 +26,8 @@ export async function revokeInviteAction(formData: FormData) {
   if (!parsed.success) redirect("/settings/access");
   await requireCurrentMember();
   const supabase = await createServerSupabaseClient();
-  await supabase.rpc("revoke_workspace_invite", { target_invite_id: parsed.data });
-  redirect("/settings/access?invite=revoked");
+  const { error } = await supabase.rpc("revoke_workspace_invite", { target_invite_id: parsed.data });
+  redirect(`/settings/access${error ? "?error=invite_revoke_failed" : "?invite=revoked"}`);
 }
 
 export async function deactivateMemberAction(formData: FormData) {

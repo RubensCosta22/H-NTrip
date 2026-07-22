@@ -15,13 +15,25 @@ const optionalMoney = z.union([
   z.coerce.number().min(0).max(999999999999.99),
 ]);
 
+const optionalWebUrl = z.union([
+  z.literal(""),
+  z.url().max(500).refine((value) => {
+    try {
+      const url = new URL(value);
+      return url.protocol === "https:" || url.protocol === "http:";
+    } catch {
+      return false;
+    }
+  }, "Use um endereço iniciado por https:// ou http://."),
+]);
+
 export const tripPlaceSchema = z.object({
   tripId: z.uuid(),
   name: z.string().trim().min(1).max(140),
   category: z.enum(placeCategories),
   address: z.string().trim().max(300),
   phone: z.string().trim().max(40),
-  website: z.union([z.literal(""), z.url().max(500)]),
+  website: optionalWebUrl,
   reservationCode: z.string().trim().max(100),
   startsOn: z.union([z.literal(""), z.iso.date()]),
   endsOn: z.union([z.literal(""), z.iso.date()]),

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { AccessActionState } from "./actions";
 import { createServerSupabaseClient } from "@/src/lib/supabase/server";
+import { getAppUrl } from "@/src/lib/app-url";
 
 const inviteSignupSchema = z.object({
   token: z.string().regex(/^[a-f0-9]{64}$/),
@@ -19,7 +20,7 @@ export async function acceptInviteSignupAction(_state: AccessActionState, formDa
   const { data: valid } = await supabase.rpc("validate_workspace_invite", { invite_token: parsed.data.token, invited_email: parsed.data.email });
   if (!valid) return { status: "error", message: "Convite inválido, expirado ou já utilizado." };
 
-  const appUrl = (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  const appUrl = getAppUrl();
   const completion = `/accept-invite/complete?token=${parsed.data.token}`;
   const { data, error } = await supabase.auth.signUp({ email: parsed.data.email, password: parsed.data.password, options: { emailRedirectTo: `${appUrl}/auth/callback?next=${encodeURIComponent(completion)}` } });
   if (error) return { status: "error", message: "Não foi possível criar a conta para este convite." };
