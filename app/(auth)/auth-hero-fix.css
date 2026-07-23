@@ -1,0 +1,44 @@
+.auth-backdrop {
+  background:
+    linear-gradient(90deg, rgba(7, 21, 37, 0.42) 0%, rgba(7, 21, 37, 0.18) 48%, rgba(7, 21, 37, 0.34) 100%),
+    linear-gradient(180deg, rgba(7, 21, 37, 0.16) 0%, rgba(7, 21, 37, 0.06) 48%, rgba(7, 21, 37, 0.36) 100%),
+    url("/auth-landscape.png?v=20260723") center 52% / cover no-repeat;
+  filter: saturate(1.08) contrast(1.04);
+}
+
+.auth-hero {
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  margin-left: clamp(-2.5rem, -3vw, -1rem);
+  border-radius: 1.5rem;
+  background: linear-gradient(90deg, rgba(3, 15, 28, 0.5), rgba(3, 15, 28, 0.08) 82%, transparent);
+  backdrop-filter: blur(1px);
+}
+
+.auth-hero h1 {
+  text-shadow: 0 5px 30px rgba(0, 0, 0, 0.52);
+}
+
+.auth-hero > p:last-child {
+  color: #e4edf5;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.48);
+}
+
+@media (max-width: 920px) {
+  .auth-backdrop {
+    background-position: 44% center;
+  }
+
+  .auth-hero {
+    margin-left: 0;
+    padding: 1.25rem;
+    background: linear-gradient(90deg, rgba(3, 15, 28, 0.52), rgba(3, 15, 28, 0.18));
+  }
+}
+
+@media (max-width: 560px) {
+  .auth-backdrop {
+    background:
+      linear-gradient(180deg, rgba(7, 21, 37, 0.18) 0%, rgba(7, 21, 37, 0.38) 52%, rgba(7, 21, 37, 0.72) 100%),
+      url("/auth-landscape.png?v=20260723") 43% center / cover no-repeat;
+  }
+}
