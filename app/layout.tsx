@@ -5,6 +5,7 @@ import "./globals.css";
 import "./brand-system.css";
 import "./brand-overrides.css";
 import "./brand-polish.css";
+import "./brand-v2.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,7 +36,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#06111f",
+  themeColor: "#050e19",
 };
 
 export default function RootLayout({
