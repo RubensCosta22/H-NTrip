@@ -2,9 +2,12 @@
   background: #050e19;
 }
 
-/* Keep the intact embedded photograph from auth-brand.css. Do not override its image source. */
 .auth-backdrop {
-  filter: brightness(1.48) saturate(1.14) contrast(1.03);
+  background:
+    linear-gradient(90deg, rgba(5,14,25,.22) 0%, rgba(5,14,25,.08) 42%, rgba(5,14,25,.68) 72%, rgba(5,14,25,.88) 100%),
+    linear-gradient(180deg, rgba(5,14,25,.08), rgba(5,14,25,.3)),
+    url("/hntrip-login-hero.jpg") center 54% / cover no-repeat;
+  filter: brightness(1.24) saturate(1.12) contrast(1.03);
   transform: scale(1.025);
   transform-origin: center;
 }
@@ -16,8 +19,8 @@
   z-index: 0;
   pointer-events: none;
   background:
-    linear-gradient(90deg, rgba(5,14,25,.2) 0%, rgba(5,14,25,.08) 42%, rgba(5,14,25,.7) 72%, rgba(5,14,25,.88) 100%),
-    linear-gradient(180deg, rgba(5,14,25,.08), rgba(5,14,25,.3));
+    linear-gradient(90deg, rgba(5,14,25,.18) 0%, rgba(5,14,25,.05) 42%, rgba(5,14,25,.6) 72%, rgba(5,14,25,.82) 100%),
+    linear-gradient(180deg, rgba(5,14,25,.04), rgba(5,14,25,.22));
 }
 
 .auth-header,
@@ -28,7 +31,7 @@
 .auth-header {
   height: 5rem;
   border-bottom-color: rgba(235,245,250,.12);
-  background: rgba(5,14,25,.52);
+  background: rgba(5,14,25,.48);
   backdrop-filter: blur(18px) saturate(125%);
 }
 
@@ -112,10 +115,11 @@
     align-content: center;
   }
   .auth-backdrop {
-    filter: brightness(1.28) saturate(1.1);
+    background-position: 44% center;
+    filter: brightness(1.18) saturate(1.08);
   }
   .auth-shell::after {
-    background: linear-gradient(180deg, rgba(5,14,25,.2), rgba(5,14,25,.6) 72%, rgba(5,14,25,.86));
+    background: linear-gradient(180deg, rgba(5,14,25,.16), rgba(5,14,25,.52) 72%, rgba(5,14,25,.82));
   }
   .auth-hero h1 {
     max-width: 10ch;
