@@ -64,13 +64,21 @@ export default async function DashboardPage() {
   if (!currentTrip) {
     return (
       <main className="app-page dashboard-page">
-        <section className="dashboard-hero">
-          <div>
+        <section className="dashboard-hero dashboard-hero-v2">
+          <div className="dashboard-hero-copy">
             <p className="page-eyebrow">Bem-vinda ao H&amp;NTrip</p>
-            <h1>Todo o planejamento,<br />em um só horizonte.</h1>
-            <p>{activeTrips.length ? "Não há uma próxima viagem planejada. Que tal abrir um novo horizonte?" : "Crie sua primeira viagem e transforme ideias em um plano compartilhado."}</p>
+            <h1>Planejar também faz parte da viagem.</h1>
+            <p>{activeTrips.length ? "Não há uma próxima viagem planejada. Escolha o próximo destino e transforme a ideia em um plano completo." : "Comece pelo destino. O H&NTrip organiza roteiro, reservas, orçamento, documentos e memórias no mesmo lugar."}</p>
             <Link className="app-primary-link" href="/trips/new"><Plus aria-hidden="true" size={18} /> Criar viagem <ArrowRight aria-hidden="true" size={18} /></Link>
           </div>
+          <aside className="dashboard-brand-rail" aria-label="Jornada H&NTrip">
+            <p>Do primeiro plano à última memória</p>
+            <ol>
+              <li>Planeje os detalhes</li>
+              <li>Viva o roteiro</li>
+              <li>Guarde a história</li>
+            </ol>
+          </aside>
         </section>
       </main>
     );
@@ -96,7 +104,7 @@ export default async function DashboardPage() {
   return (
     <main className="app-page dashboard-page dashboard-active">
       <TripRealtimeRefresh tripId={currentTrip.id} tables={["expenses", "checklist_items"]} supabaseConfig={supabaseConfig} />
-      <section className="dashboard-trip-hero">
+      <section className="dashboard-trip-hero dashboard-trip-hero-v2">
         <div className="dashboard-trip-copy">
           <div className="dashboard-trip-kicker"><span>{statusLabel}</span><span>{activeTrips.length} {activeTrips.length === 1 ? "viagem ativa" : "viagens ativas"}</span></div>
           <p className="page-eyebrow">Seu próximo horizonte</p>
