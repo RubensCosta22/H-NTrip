@@ -33,7 +33,7 @@ export function parseBudget(input: string) {
 }
 
 export const idSchema = z.uuid();
-export const editableTripStatusSchema = z.enum(["draft", "planned"]);
+export const editableTripStatusSchema = z.enum(["draft", "planned", "ongoing", "completed"]);
 export const participantFormSchema = z.object({
   tripId: idSchema,
   name: z.string().trim().min(1).max(120),
