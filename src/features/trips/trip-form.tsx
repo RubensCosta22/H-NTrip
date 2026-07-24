@@ -5,6 +5,8 @@ import { CalendarDays, MapPin, WalletCards } from "lucide-react";
 import { initialAccessState } from "@/src/features/access/actions";
 import { createTripAction, updateTripAction } from "./actions";
 
+type TripStatus = "draft" | "planned" | "ongoing" | "completed";
+
 type TripDefaults = {
   name: string;
   destination: string;
@@ -14,7 +16,7 @@ type TripDefaults = {
   timezone: string;
   baseCurrency: string;
   budget: string;
-  status: "draft" | "planned";
+  status: TripStatus;
 };
 
 export function TripForm({ tripId, defaults }: { tripId?: string; defaults?: TripDefaults }) {
@@ -72,11 +74,14 @@ export function TripForm({ tripId, defaults }: { tripId?: string; defaults?: Tri
         </div>
         {editing && (
           <label className="app-field app-field-wide">
-            <span>Status do planejamento</span>
+            <span>Status da viagem</span>
             <select name="status" defaultValue={defaults?.status ?? "draft"} required>
               <option value="draft">Rascunho</option>
               <option value="planned">Planejada</option>
+              <option value="ongoing">Em andamento</option>
+              <option value="completed">Concluída</option>
             </select>
+            <small>Arquivar continua sendo uma ação separada e não apaga o histórico da viagem.</small>
           </label>
         )}
         <label className="app-field app-field-wide">
