@@ -57,19 +57,31 @@ export default async function DashboardPage() {
   }
 
   const today = new Date().toISOString().slice(0, 10);
-  const activeTrips = trips ?? [];
+  const allTrips = trips ?? [];
+  const activeTrips = allTrips.filter((trip) => trip.status !== "completed");
   const currentTrip = activeTrips.find((trip) => trip.status === "ongoing")
-    ?? activeTrips.find((trip) => trip.end_date >= today && trip.status !== "completed");
+    ?? activeTrips.find((trip) => trip.status === "planned" && trip.end_date >= today);
 
   if (!currentTrip) {
+    const hasDrafts = activeTrips.some((trip) => trip.status === "draft");
+    const hasCompletedTrips = allTrips.some((trip) => trip.status === "completed");
+    const emptyCopy = hasDrafts
+      ? "Você tem viagens em rascunho, mas nenhuma marcada como planejada ou em andamento. Continue o planejamento quando quiser."
+      : hasCompletedTrips
+        ? "Sua última viagem já virou memória. Quando surgir o próximo destino, comece um novo planejamento por aqui."
+        : "Comece pelo destino. O H&NTrip organiza roteiro, reservas, orçamento, documentos e memórias no mesmo lugar.";
+
     return (
       <main className="app-page dashboard-page">
         <section className="dashboard-hero dashboard-hero-v2">
           <div className="dashboard-hero-copy">
             <p className="page-eyebrow">Bem-vinda ao H&amp;NTrip</p>
             <h1>Planejar também faz parte da viagem.</h1>
-            <p>{activeTrips.length ? "Não há uma próxima viagem planejada. Escolha o próximo destino e transforme a ideia em um plano completo." : "Comece pelo destino. O H&NTrip organiza roteiro, reservas, orçamento, documentos e memórias no mesmo lugar."}</p>
-            <Link className="app-primary-link" href="/trips/new"><Plus aria-hidden="true" size={18} /> Criar viagem <ArrowRight aria-hidden="true" size={18} /></Link>
+            <p>{emptyCopy}</p>
+            <div className="dashboard-hero-actions">
+              {hasDrafts && <Link className="app-secondary-link" href="/trips">Ver rascunhos</Link>}
+              <Link className="app-primary-link" href="/trips/new"><Plus aria-hidden="true" size={18} /> Criar viagem <ArrowRight aria-hidden="true" size={18} /></Link>
+            </div>
           </div>
           <aside className="dashboard-brand-rail" aria-label="Jornada H&NTrip">
             <p>Do primeiro plano à última memória</p>
@@ -99,7 +111,7 @@ export default async function DashboardPage() {
   const checklistPercent = totalItems ? (completedItems / totalItems) * 100 : 0;
   const formatMoney = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: currentTrip.base_currency }).format(value);
   const hasSummaryError = Boolean(expensesError || checklistError || activitiesError);
-  const statusLabel = currentTrip.status === "ongoing" ? "Em andamento" : currentTrip.status === "draft" ? "Rascunho" : "Próxima viagem";
+  const statusLabel = currentTrip.status === "ongoing" ? "Em andamento" : "Próxima viagem";
 
   return (
     <main className="app-page dashboard-page dashboard-active">

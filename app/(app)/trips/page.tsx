@@ -7,6 +7,13 @@ export const dynamic = "force-dynamic";
 
 type TripsPageProps = { searchParams: Promise<{ created?: string; archived?: string }> };
 
+const statusLabels: Record<string, string> = {
+  draft: "Rascunho",
+  planned: "Planejada",
+  ongoing: "Em andamento",
+  completed: "Concluída",
+};
+
 export default async function TripsPage({ searchParams }: TripsPageProps) {
   const member = await requireCurrentMember();
   const supabase = await createServerSupabaseClient();
@@ -38,12 +45,12 @@ export default async function TripsPage({ searchParams }: TripsPageProps) {
         <section className="trip-grid" aria-label="Lista de viagens">
           {trips.map((trip) => (
             <article className="trip-card" key={trip.id}>
-              <div className="trip-status">{trip.status === "draft" ? "Rascunho" : trip.status === "planned" ? "Planejada" : trip.status === "ongoing" ? "Em andamento" : "Concluída"}</div>
+              <div className={`trip-status trip-status-${trip.status}`}>{statusLabels[trip.status] ?? trip.status}</div>
               <h2>{trip.name}</h2>
               <p><MapPin aria-hidden="true" size={17} /> {trip.destination}</p>
               <p><CalendarDays aria-hidden="true" size={17} /> {new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(new Date(`${trip.start_date}T00:00:00Z`))} — {new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(new Date(`${trip.end_date}T00:00:00Z`))}</p>
               <strong>{new Intl.NumberFormat("pt-BR", { style: "currency", currency: trip.base_currency }).format(Number(trip.budget))}</strong>
-              <Link className="trip-card-link" href={`/trips/${trip.id}`}>Abrir planejamento</Link>
+              <Link className="trip-card-link" href={`/trips/${trip.id}`}>{trip.status === "completed" ? "Rever viagem" : "Abrir planejamento"}</Link>
             </article>
           ))}
         </section>
