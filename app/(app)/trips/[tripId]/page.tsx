@@ -14,6 +14,8 @@ type TripDetailProps = {
   searchParams: Promise<{ updated?: string; participant?: string; error?: string }>;
 };
 
+type EditableTripStatus = "draft" | "planned" | "ongoing" | "completed";
+
 export default async function TripDetailPage({ params, searchParams }: TripDetailProps) {
   const { tripId } = await params;
   const member = await requireCurrentMember();
@@ -64,7 +66,7 @@ export default async function TripDetailPage({ params, searchParams }: TripDetai
       <div className="trip-detail-grid">
         <section>
           <div className="section-heading"><div><p className="page-eyebrow">Planejamento</p><h2>Informações essenciais</h2></div><CalendarDays aria-hidden="true" /></div>
-          <div className="form-surface detail-form"><TripForm tripId={trip.id} defaults={{ name: trip.name, destination: trip.destination, description: trip.description ?? "", startDate: trip.start_date, endDate: trip.end_date, timezone: trip.timezone, baseCurrency: trip.base_currency, budget: String(trip.budget).replace(".", ","), status: trip.status === "planned" ? "planned" : "draft" }} /></div>
+          <div className="form-surface detail-form"><TripForm tripId={trip.id} defaults={{ name: trip.name, destination: trip.destination, description: trip.description ?? "", startDate: trip.start_date, endDate: trip.end_date, timezone: trip.timezone, baseCurrency: trip.base_currency, budget: String(trip.budget).replace(".", ","), status: trip.status as EditableTripStatus }} /></div>
         </section>
 
         <section className="participants-section">
