@@ -7,6 +7,7 @@ import type { SupabasePublicConfig } from "@/src/lib/supabase/config";
 
 const allowedTables = new Set([
   "expenses",
+  "planned_expenses",
   "expense_categories",
   "checklists",
   "checklist_items",
