@@ -20,7 +20,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tri
     daysResult,
     activitiesResult,
     categoriesResult,
-    expensesResult,
+    financeResult,
     listsResult,
     itemsResult,
     documentsResult,
@@ -32,7 +32,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tri
     supabase.from("itinerary_days").select("id, day_date, title, notes").eq("trip_id", tripId).eq("workspace_id", member.workspaceId).order("day_date", { ascending: true }).order("id", { ascending: true }),
     supabase.from("itinerary_activities").select("itinerary_day_id, title, description, location_name, location_latitude, location_longitude, start_time, end_time, ends_next_day, timezone, position").eq("trip_id", tripId).eq("workspace_id", member.workspaceId).order("position", { ascending: true }),
     supabase.from("expense_categories").select("id, name, color").eq("trip_id", tripId).eq("workspace_id", member.workspaceId).is("archived_at", null).order("name", { ascending: true }),
-    supabase.from("expenses").select("category_id, description, merchant, expense_date, amount, currency, created_at").eq("trip_id", tripId).eq("workspace_id", member.workspaceId).is("deleted_at", null).order("expense_date", { ascending: true }).order("created_at", { ascending: true }),
+    supabase.rpc("trip_finance_export", { target_trip_id: tripId }),
     supabase.from("checklists").select("id, name, description, created_at").eq("trip_id", tripId).eq("workspace_id", member.workspaceId).is("archived_at", null).order("created_at", { ascending: true }),
     supabase.from("checklist_items").select("checklist_id, title, notes, assignee_name, due_date, position, is_completed, completed_at").eq("trip_id", tripId).eq("workspace_id", member.workspaceId).order("position", { ascending: true }),
     supabase.from("trip_documents").select("id, title, category, holder_name, issued_on, expires_on, notes, created_at").eq("trip_id", tripId).eq("workspace_id", member.workspaceId).is("archived_at", null).order("created_at", { ascending: true }),
@@ -41,7 +41,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tri
   ]);
 
   if (!tripResult.data) return new NextResponse("Viagem não encontrada.", { status: 404 });
-  const queryResults = [participantsResult, daysResult, activitiesResult, categoriesResult, expensesResult, listsResult, itemsResult, documentsResult, documentFilesResult, photosResult];
+  const queryResults = [participantsResult, daysResult, activitiesResult, categoriesResult, financeResult, listsResult, itemsResult, documentsResult, documentFilesResult, photosResult];
   if (queryResults.some((result) => result.error)) return new NextResponse("Exportação indisponível.", { status: 503 });
 
   const activitiesByDay = new Map<string, typeof activitiesResult.data>();
@@ -69,7 +69,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tri
     trip: tripResult.data,
     participants: participantsResult.data ?? [],
     itinerary: (daysResult.data ?? []).map((day) => ({ ...day, activities: activitiesByDay.get(day.id) ?? [] })),
-    finance: { categories: categoriesResult.data ?? [], expenses: expensesResult.data ?? [] },
+    finance: { categories: categoriesResult.data ?? [], ...financeResult.data },
     checklists: (listsResult.data ?? []).map((list) => ({ ...list, items: itemsByList.get(list.id) ?? [] })),
     documents: (documentsResult.data ?? []).map((document) => ({ ...document, files: filesByDocument.get(document.id) ?? [] })),
     photos: photosResult.data ?? [],

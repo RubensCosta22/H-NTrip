@@ -1,7 +1,7 @@
 # HNT-FINANCE-002 — Valores previstos e realizados
 
-- Produto: H&NTrip; versão da especificação: 1.0; data: 2026-09-15.
-- Estado: In Review. Implementação ainda não iniciada.
+- Produto: H&NTrip; versão da especificação: 1.1; data: 2026-09-15.
+- Estado: In Development. Ready após revisão independente da v1.1 (arquivo de revisão).
 - Owner e autoridade de produto/release: RubensCosta22.
 - Risco: R3, pois cria persistência financeira privada, RLS e confirmação transacional.
 - Orçamento de processo: até duas sessões focadas, sem dispensar controles.
@@ -25,7 +25,7 @@ FR-04: Mostrar, com rótulos distintos:
 - Orçamento: teto da viagem.
 - Previsto original: soma das previsões não canceladas, inclusive as confirmadas.
 - Realizado: soma dos gastos não estornados, incluindo gastos sem previsão.
-- Ainda previsto: soma das previsões sem pagamento ativo.
+- Ainda previsto: soma das previsões não canceladas e sem pagamento ativo.
 - Projeção final: realizado + ainda previsto.
 - Margem projetada: orçamento - projeção final.
 
@@ -37,7 +37,7 @@ FR-06: Estornar um gasto confirmado preserva a estimativa e reabre o item como p
 
 FR-07: Importar uma única vez os 14 custos previstos positivos dos locais/serviços de `Conhecendo Campos`, com categoria financeira correspondente e vínculo à origem. Validar quantidade e soma antes de gravar. Teto R$ 3.800; previsto R$ 3.562,17; realizado R$ 0; margem R$ 237,83, caso nenhum pagamento tenha sido lançado desde a preparação. Se os dados mudarem, reconciliar antes da importação.
 
-Os R$ 300 de compras já incluem Boulevard, Macedo Soares, chocolates e lembranças. Prana permanece previsto em R$ 100 e pode ser cancelado. Não somar custos de locais novamente ao orçamento financeiro. Previsões importadas tornam-se os registros financeiros editáveis/confirmáveis; o custo do local permanece referência, sem sincronização bidirecional implícita.
+Os R$ 300 de compras já incluem Boulevard, Macedo Soares, chocolates e lembranças. Prana permanece previsto em R$ 100 e pode ser cancelado. Não somar custos de locais novamente ao orçamento financeiro. Previsões importadas tornam-se os registros financeiros confirmáveis; o custo do local permanece referência, sem sincronização bidirecional implícita.
 
 FR-08: Exportação privada inclui previsões e vínculo com os gastos. Atualização colaborativa inclui as previsões. Falha ao ler o planejamento deve mostrar indisponibilidade, nunca totais falsamente zerados.
 
@@ -109,6 +109,20 @@ Legacy touch: financeiro e exportação materialmente afetados. Revisar baseline
 
 Testes: unitários de cálculos/validação; integração transacional para confirmação/estorno/reenvio; permissões reais com papéis autenticados; teste concorrente; regressão do financeiro existente; build/typecheck/lint; inspeção visual mobile e desktop; verificação final das somas e do deploy.
 
+## Revisão 1.1 — resoluções da revisão independente
+
+M1: adicionar ledger `planned_expense_confirmations` imutável, com previsão, despesa, request_idempotency_key, valor real, data e autoria. Chave única por workspace. Cada nova confirmação intencional usa nova chave; retry usa a mesma. Retry de confirmação já estornada retorna erro específico `confirmation_reversed`, sem criar pagamento. Retry idêntico ativo retorna o mesmo pagamento; payload divergente é conflito. Conservar todos os vínculos históricos, além de confirmed_expense_id como referência ao último pagamento.
+
+M2: todas as mutações novas travam viagem (FOR UPDATE), depois previsão, depois despesa. A RPC legada reverse_expense será substituída por wrapper invoker que aplica a mesma ordem e preserva assinatura/comportamento. Atualização do estado/arquivamento da viagem trava a mesma linha, serializando contra confirmação, cancelamento e criação. Revalidar estado após adquirir lock. Não mudar RPC add_expense nem demais domínios nesta entrega.
+
+M3: nesta versão não há edição de previsão. Para corrigir previsão pendente, cancelar e recriar; a interface explica esse caminho. Confirmação permite editar apenas valor e data reais. Estorno reabre a previsão. Modificação do valor previsto original não é permitida.
+
+M4: importação privada, fora da migration pública. Snapshot item a item inclui ID do local, updated_at, categoria mapeada, valor, nome e data resolvida. O importador trava viagem e origens e compara os dados ao snapshot revisado antes de gravar. Qualquer divergência ou pagamento existente não reconciliado aborta. `source_place_id` único impede duplicação, mesmo após cancelamento. Registrar batch ID em todas as linhas e auditoria; segunda execução não duplica. Remediação alcança apenas batch correto sem histórico de confirmação.
+
+Precisão: numeric(14,2) no banco e agregação SQL, rejeitando zero/negativos, NaN, infinito, excesso de casas e overflow antes do cast. Moeda é a moeda-base da viagem no instante da criação; impedir confirmar em outra moeda. Não realizar câmbio. Enviar strings decimais à RPC. Previsões e ledger expõem somente SELECT por RLS, sem mutações diretas autenticadas.
+
+Validação adicional obrigatória: retry antigo depois de estorno e reconfirmação; corrida confirmação×estorno×cancelamento×arquivamento; alteração de um item do snapshot compensada por outro preservando soma; source repetido; importação com pagamentos existentes. Projeção cancela corretamente Prana e recalcula a margem.
+
 ## Estado de prontidão
 
-Escopo e regras descritos. Implementação bloqueada somente até a revisão independente exigida pela seção 29 e tratamento dos achados. Ferramentas suportam contexto separado, mas as instruções da sessão exigem autorização explícita do usuário para abrir um segundo agente; não registrar revisão própria como independente. Este documento não afirma testes executados nem aprovação técnica concluída.
+Escopo e regras descritos. Revisão independente da v1.1 concluída: todos os achados Major e Minor resolvidos; Ready para implementação. Usuário autorizou revisão independente e envio da branch nesta sessão. Revisão v1.0 concluída; v1.1 enviada para revalidação dos achados. Este documento não afirma testes executados nem aprovação técnica concluída.
