@@ -8,7 +8,11 @@ let browserClient: ReturnType<typeof createBrowserClient> | undefined;
 export function createBrowserSupabaseClient(config: SupabasePublicConfig) {
   if (!browserClient) {
     const { url, publishableKey } = config;
-    browserClient = createBrowserClient(url, publishableKey);
+    browserClient = createBrowserClient(url, publishableKey, {
+      auth: {
+        flowType: "pkce",
+      },
+    });
   }
 
   return browserClient;
