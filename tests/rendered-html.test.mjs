@@ -208,7 +208,8 @@ test("finance and activity lists filter and paginate without changing financial 
   const activity = await readFile(new URL("../app/(app)/trips/[tripId]/activity/page.tsx", import.meta.url), "utf8");
   assert.match(finance, /description\.ilike/);
   assert.match(finance, /expenseQuery\.eq\("category_id"/);
-  assert.match(finance, /allAmounts/);
+  assert.match(finance, /trip_finance_summary/);
+  assert.match(finance, /planned_expenses/);
   assert.match(finance, /pageSize = 20/);
   assert.match(activity, /filteredEvents/);
   assert.match(activity, /moduleFilter/);

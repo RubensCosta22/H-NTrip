@@ -14,7 +14,8 @@ export const expenseSchema = z.object({
   description: z.string().trim().min(1).max(180),
   merchant: z.string().trim().max(120),
   date: z.iso.date(),
-  amountInput: z.string().trim().regex(moneyPattern),
+  amountInput: z.string().trim().regex(moneyPattern).refine((value) => Number(value.replace(",", ".")) > 0),
+  kind: z.enum(["planned", "actual"]).default("actual"),
   idempotencyKey: z.uuid(),
 });
 
@@ -26,3 +27,9 @@ export const expenseMutationSchema = z.object({
 export function parseExpenseAmount(input: string) {
   return Number(input.replace(",", ".")).toFixed(2);
 }
+
+export const confirmExpenseSchema = expenseMutationSchema.extend({
+  amountInput: z.string().trim().regex(moneyPattern).refine((value) => Number(value.replace(",", ".")) > 0),
+  date: z.iso.date(),
+  idempotencyKey: z.uuid(),
+});

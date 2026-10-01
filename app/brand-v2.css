@@ -318,3 +318,23 @@ body {
   .dashboard-module-card { min-height: 17rem; }
   .dashboard-metrics { grid-template-columns: 1fr 1fr; }
 }
+
+/* Financial planning keeps estimates distinct from completed payments. */
+.planned-expense-section { margin-block: 1.5rem 2rem; }
+.planned-expense-list { display: grid; gap: 1rem; }
+.planned-expense-card { padding: 1.25rem; border: 1px solid #cbd5e1; border-radius: 1rem; background: var(--surface, #fff); color: #163047; }
+.planned-expense-card header { display: flex; justify-content: space-between; align-items: start; gap: 1rem; }
+.planned-expense-card h3 { margin: 0; font-size: 1rem; }
+.planned-expense-card p { font-size: .88rem; }
+.planned-status { padding: .3rem .65rem; border-radius: 1rem; font-size: .78rem; background: #fff0cc; color: #674300; white-space: nowrap; }
+.planned-status.confirmed { background: #dcfce7; color: #14532d; }
+.planned-values { display: flex; flex-wrap: wrap; gap: 1rem 2rem; }
+.planned-values dt { font-size: .8rem; color: #465a6b; }
+.planned-values dd { margin: .3rem 0 0; font-weight: 650; }
+.planned-actions { display: flex; align-items: start; flex-wrap: wrap; gap: 1rem; }
+.planned-actions details { flex: 1; min-width: 180px; }
+.planned-actions summary { cursor: pointer; font-weight: 650; padding-block: .65rem; color: #075985; }
+.planned-confirm-form { display: grid; gap: .8rem; padding-block: .8rem; }
+.planned-pagination { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem; }
+.planned-pagination a { text-decoration: underline; }
+@media (max-width: 600px) { .planned-values { flex-direction: column; gap: .7rem; } .planned-actions { flex-direction: column; } .planned-actions details { width: 100%; } }

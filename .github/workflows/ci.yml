@@ -63,3 +63,29 @@ jobs:
 
       - name: Test database isolation
         run: npm run supabase:test
+
+  finance-concurrency:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: disposable-test-only
+          POSTGRES_DB: hntrip_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      HNTRIP_TEST_DATABASE_URL: postgresql://postgres:disposable-test-only@localhost:5432/hntrip_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: node --test tests/planned-expenses.test.mjs
