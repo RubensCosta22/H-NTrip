@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "h-ntrip",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-10-06",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": true,
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://xkxupocyopwdncfaudko.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_uw0GDauIwO-UCWkgrNgHjw_z5KEMUTs",
+    "APP_URL": "https://h-ntrip.rubens19962.workers.dev"
+  }
+}
