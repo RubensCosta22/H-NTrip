@@ -24,15 +24,12 @@ export async function addExpenseAction(_previousState: AccessActionState, formDa
   redirect(`/trips/${parsed.data.tripId}/finance?expense=added`);
 }
 
-export async function savePlannedExpenseActualAction(formData: FormData) {
-  const tripId = String(formData.get("tripId") ?? "");
-  const placeId = String(formData.get("placeId") ?? "");
-  const amountInput = String(formData.get("amount") ?? "").trim();
-  if (!/^[0-9a-f-]{36}$/i.test(tripId) || !/^[0-9a-f-]{36}$/i.test(placeId) || !/^\d{1,12}(?:[.,]\d{1,2})?$/.test(amountInput)) redirect(`/trips/${tripId}/finance?error=actual_invalid`);
-  const member = await requireCurrentMember(); const supabase = await createServerSupabaseClient();
-  const amount = parseExpenseAmount(amountInput);
-  const { error } = await supabase.from("trip_places").update({ actual_cost: amount, updated_by: member.userId, updated_at: new Date().toISOString() }).eq("id", placeId).eq("trip_id", tripId).eq("workspace_id", member.workspaceId).is("archived_at", null);
-  redirect(`/trips/${tripId}/finance${error ? "?error=actual_failed" : "?actual=saved"}`);
+export async function saveFinanceItemAmountAction(formData: FormData) {
+  const tripId=String(formData.get("tripId")??""); const itemId=String(formData.get("itemId")??""); const input=String(formData.get("amount")??"").trim();
+  if(!/^[0-9a-f-]{36}$/i.test(tripId)||!/^[0-9a-f-]{36}$/i.test(itemId)||!/^\d{1,12}(?:[.,]\d{1,2})?$/.test(input)) redirect(`/trips/${tripId}/finance?error=actual_invalid`);
+  await requireCurrentMember(); const supabase=await createServerSupabaseClient();
+  const {error}=await supabase.rpc("save_finance_item_amount",{target_item_id:itemId,item_amount:parseExpenseAmount(input)});
+  redirect(`/trips/${tripId}/finance${error?"?error=actual_failed":"?actual=saved"}`);
 }
 
 export async function reverseExpenseAction(formData: FormData) {
