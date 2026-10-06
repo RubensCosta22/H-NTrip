@@ -6,55 +6,39 @@ import { requireCurrentMember } from "@/src/lib/auth/current-member";
 import { createServerSupabaseClient } from "@/src/lib/supabase/server";
 import { expenseCategorySchema, expenseMutationSchema, expenseSchema, parseExpenseAmount } from "./schema";
 
-export async function addExpenseCategoryAction(
-  _previousState: AccessActionState,
-  formData: FormData,
-): Promise<AccessActionState> {
-  const parsed = expenseCategorySchema.safeParse({
-    tripId: formData.get("tripId"), name: formData.get("name"), color: formData.get("color"),
-  });
+export async function addExpenseCategoryAction(_previousState: AccessActionState, formData: FormData): Promise<AccessActionState> {
+  const parsed = expenseCategorySchema.safeParse({ tripId: formData.get("tripId"), name: formData.get("name"), color: formData.get("color") });
   if (!parsed.success) return { status: "error", message: "Revise o nome e a cor da categoria." };
-  await requireCurrentMember();
-  const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.rpc("add_expense_category", {
-    target_trip_id: parsed.data.tripId, category_name: parsed.data.name,
-    category_color: parsed.data.color,
-  });
+  await requireCurrentMember(); const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("add_expense_category", { target_trip_id: parsed.data.tripId, category_name: parsed.data.name, category_color: parsed.data.color });
   if (error) return { status: "error", message: "Não foi possível criar. O nome pode já estar em uso." };
   redirect(`/trips/${parsed.data.tripId}/finance?category=added`);
 }
 
-export async function addExpenseAction(
-  _previousState: AccessActionState,
-  formData: FormData,
-): Promise<AccessActionState> {
-  const parsed = expenseSchema.safeParse({
-    tripId: formData.get("tripId"), categoryId: formData.get("categoryId"),
-    description: formData.get("description"), merchant: formData.get("merchant") ?? "",
-    date: formData.get("date"), amountInput: formData.get("amount"),
-    idempotencyKey: formData.get("idempotencyKey"),
-  });
+export async function addExpenseAction(_previousState: AccessActionState, formData: FormData): Promise<AccessActionState> {
+  const parsed = expenseSchema.safeParse({ tripId: formData.get("tripId"), categoryId: formData.get("categoryId"), description: formData.get("description"), merchant: formData.get("merchant") ?? "", date: formData.get("date"), amountInput: formData.get("amount"), idempotencyKey: formData.get("idempotencyKey") });
   if (!parsed.success) return { status: "error", message: "Revise os dados do gasto." };
-  await requireCurrentMember();
-  const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.rpc("add_expense", {
-    target_trip_id: parsed.data.tripId, target_category_id: parsed.data.categoryId,
-    expense_description: parsed.data.description, expense_merchant: parsed.data.merchant,
-    target_expense_date: parsed.data.date,
-    expense_amount: parseExpenseAmount(parsed.data.amountInput),
-    request_idempotency_key: parsed.data.idempotencyKey,
-  });
+  await requireCurrentMember(); const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("add_expense", { target_trip_id: parsed.data.tripId, target_category_id: parsed.data.categoryId, expense_description: parsed.data.description, expense_merchant: parsed.data.merchant, target_expense_date: parsed.data.date, expense_amount: parseExpenseAmount(parsed.data.amountInput), request_idempotency_key: parsed.data.idempotencyKey });
   if (error) return { status: "error", message: "Não foi possível registrar. Confira a categoria, a data e o valor." };
   redirect(`/trips/${parsed.data.tripId}/finance?expense=added`);
 }
 
+export async function savePlannedExpenseActualAction(formData: FormData) {
+  const tripId = String(formData.get("tripId") ?? "");
+  const placeId = String(formData.get("placeId") ?? "");
+  const amountInput = String(formData.get("amount") ?? "").trim();
+  if (!/^[0-9a-f-]{36}$/i.test(tripId) || !/^[0-9a-f-]{36}$/i.test(placeId) || !/^\d{1,12}(?:[.,]\d{1,2})?$/.test(amountInput)) redirect(`/trips/${tripId}/finance?error=actual_invalid`);
+  const member = await requireCurrentMember(); const supabase = await createServerSupabaseClient();
+  const amount = parseExpenseAmount(amountInput);
+  const { error } = await supabase.from("trip_places").update({ actual_cost: amount, updated_by: member.userId, updated_at: new Date().toISOString() }).eq("id", placeId).eq("trip_id", tripId).eq("workspace_id", member.workspaceId).is("archived_at", null);
+  redirect(`/trips/${tripId}/finance${error ? "?error=actual_failed" : "?actual=saved"}`);
+}
+
 export async function reverseExpenseAction(formData: FormData) {
-  const parsed = expenseMutationSchema.safeParse({
-    tripId: formData.get("tripId"), expenseId: formData.get("expenseId"),
-  });
+  const parsed = expenseMutationSchema.safeParse({ tripId: formData.get("tripId"), expenseId: formData.get("expenseId") });
   if (!parsed.success) redirect("/trips");
-  await requireCurrentMember();
-  const supabase = await createServerSupabaseClient();
+  await requireCurrentMember(); const supabase = await createServerSupabaseClient();
   const { error } = await supabase.rpc("reverse_expense", { target_expense_id: parsed.data.expenseId });
   redirect(`/trips/${parsed.data.tripId}/finance${error ? "?error=reverse_failed" : "?expense=reversed"}`);
 }
