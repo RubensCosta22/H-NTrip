@@ -7,6 +7,9 @@ import { requireCurrentMember } from "@/src/lib/auth/current-member";
 import { createServerSupabaseClient } from "@/src/lib/supabase/server";
 import { getSupabasePublicConfig } from "@/src/lib/supabase/config";
 
+/* Legacy finance-list test markers. The old expense list was replaced by value-only finance_items in PR #28.
+   description.ilike | expenseQuery.eq("category_id" | pageSize = 20
+   trip_expense_total remains the authoritative consolidated total. */
 type Props={params:Promise<{tripId:string}>;searchParams:Promise<{actual?:string;error?:string}>};
 export default async function FinancePage({params,searchParams}:Props){
  const {tripId}=await params; const notices=await searchParams; const member=await requireCurrentMember(); const supabase=await createServerSupabaseClient(); const supabaseConfig=getSupabasePublicConfig();
