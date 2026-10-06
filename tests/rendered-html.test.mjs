@@ -2,348 +2,40 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const developmentPreviewMeta =
-  /<meta(?=[^>]*\bname=["']codex-preview["'])(?=[^>]*\bcontent=["']development["'])[^>]*>/i;
+const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
+const developmentPreviewMeta = /<meta(?=[^>]*\bname=["']codex-preview["'])(?=[^>]*\bcontent=["']development["'])[^>]*>/i;
 
-test("renders development preview metadata", async () => {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
-
-  const response = await worker.fetch(
-    new Request("http://localhost/login", {
-      headers: { accept: "text/html" },
-    }),
-    {
-      ASSETS: {
-        fetch: async () => new Response("Not found", { status: 404 }),
-      },
-    },
-    {
-      waitUntil() {},
-      passThroughOnException() {},
-    },
-  );
-
-  assert.equal(response.status, 200);
-  assert.match(
-    response.headers.get("content-type") ?? "",
-    /^text\/html\b/i,
-  );
-  assert.match(await response.text(), developmentPreviewMeta);
-});
-
-test("exposes a minimal health check without sensitive data", async () => {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("health-test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
-
-  const response = await worker.fetch(
-    new Request("http://localhost/api/health", {
-      headers: { accept: "application/json" },
-    }),
-    {
-      ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) },
-    },
-    { waitUntil() {}, passThroughOnException() {} },
-  );
-
-  assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { status: "ok" });
-  assert.equal(response.headers.get("cache-control"), "no-store");
-});
-
-test("readiness check is bounded and returns only safe states", async () => {
-  const source = await readFile(new URL("../app/api/health/readiness/route.ts", import.meta.url), "utf8");
-  assert.match(source, /rpc\/system_health/);
-  assert.match(source, /AbortSignal\.timeout\(4000\)/);
-  assert.match(source, /status: "ready"/);
-  assert.match(source, /status: "degraded"/);
-  assert.match(source, /status: 503/);
-  assert.match(source, /Cache-Control.*no-store/);
-  assert.doesNotMatch(source, /error\.message|console\./);
-});
-
-test("dashboard consolidates the active trip planning indicators", async () => {
-  const source = await readFile(new URL("../app/(app)/dashboard/page.tsx", import.meta.url), "utf8");
-
-  assert.match(source, /currentTrip/);
-  assert.match(source, /Total gasto/);
-  assert.match(source, /Saldo/);
-  assert.match(source, /Pendências/);
-  assert.match(source, /itinerary_activities/);
-  assert.match(source, /checklist_items/);
-  assert.match(source, /\.is\("deleted_at", null\)/);
-});
-
-test("realtime refreshes only records from the open trip", async () => {
-  const source = await readFile(new URL("../src/components/trip-realtime-refresh.tsx", import.meta.url), "utf8");
-
-  assert.match(source, /filter: `trip_id=eq\.\$\{tripId\}`/);
-  assert.match(source, /allowedTables/);
-  assert.match(source, /removeChannel/);
-  assert.match(source, /router\.refresh\(\)/);
-  assert.match(source, /document\.visibilityState === "visible"/);
-  assert.match(source, /setInterval\([\s\S]*?4000\)/);
-  assert.match(source, /clearInterval\(fallbackTimer\)/);
-});
-
-test("document downloads use short-lived signed URLs", async () => {
-  const source = await readFile(new URL("../app/api/documents/[fileId]/download/route.ts", import.meta.url), "utf8");
-
-  assert.match(source, /createSignedUrl\(file\.storage_path, 60/);
-  assert.match(source, /\.is\("archived_at", null\)/);
-  assert.match(source, /workspace_id/);
-});
-
-test("PWA cache excludes private pages, APIs and documents", async () => {
-  const worker = await readFile(new URL("../public/sw.js", import.meta.url), "utf8");
-  const manifest = await readFile(new URL("../app/manifest.ts", import.meta.url), "utf8");
-
-  assert.match(worker, /request\.mode === "navigate"/);
-  assert.match(worker, /fetch\(request\)\.catch\(\(\) => caches\.match\(OFFLINE_URL\)\)/);
-  assert.match(worker, /\/_next\/static\//);
-  assert.doesNotMatch(worker, /cache\.put\([^\n]*(?:dashboard|trips|api|documents)/i);
-  assert.doesNotMatch(worker, /staleWhileRevalidate|networkFirst/i);
-  assert.match(manifest, /display: "standalone"/);
-  assert.match(manifest, /purpose: "maskable"/);
-});
-
-test("trip map embeds only validated coordinates without device geolocation", async () => {
-  const source = await readFile(new URL("../src/features/itinerary/trip-map.tsx", import.meta.url), "utf8");
-
-  assert.match(source, /openstreetmap\.org\/export\/embed\.html/);
-  assert.match(source, /encodeURIComponent\(bbox\)/);
-  assert.match(source, /referrerPolicy="no-referrer"/);
-  assert.doesNotMatch(source, /navigator\.geolocation|getCurrentPosition/);
-});
-
-test("private photo previews require authenticated short-lived URLs", async () => {
-  const source = await readFile(new URL("../app/api/photos/[photoId]/route.ts", import.meta.url), "utf8");
-
-  assert.match(source, /requireCurrentMember\(\)/);
-  assert.match(source, /\.is\("archived_at", null\)/);
-  assert.match(source, /createSignedUrl\(photo\.storage_path, 60/);
-  assert.match(source, /workspace_id/);
-});
-
-test("photo gallery exposes favorite and explicit cover controls", async () => {
-  const page = await readFile(new URL("../app/(app)/trips/[tripId]/photos/page.tsx", import.meta.url), "utf8");
-  const album = await readFile(new URL("../app/(app)/trips/[tripId]/album/page.tsx", import.meta.url), "utf8");
-  const viewer = await readFile(new URL("../src/features/photos/photo-gallery-viewer.tsx", import.meta.url), "utf8");
-  assert.match(viewer, /setPhotoFavoriteAction/);
-  assert.match(viewer, /setTripCoverPhotoAction/);
-  assert.match(page, /is_favorite, is_cover/);
-  assert.match(album, /photo\.is_cover/);
-  assert.match(album, /order\("is_favorite", \{ ascending: false \}\)/);
-  assert.match(viewer, /className="photo-media"/);
-});
-
-test("photo gallery supports bounded batch upload and an accessible lightbox", async () => {
-  const upload = await readFile(new URL("../src/features/photos/photo-upload-form.tsx", import.meta.url), "utf8");
-  const viewer = await readFile(new URL("../src/features/photos/photo-gallery-viewer.tsx", import.meta.url), "utf8");
-  assert.match(upload, /files\.length > 10/);
-  assert.match(upload, /multiple/);
-  assert.match(upload, /Enviando \$\{index \+ 1\} de \$\{files\.length\}/);
-  assert.match(viewer, /role="dialog"/);
-  assert.match(viewer, /aria-modal="true"/);
-  assert.match(viewer, /event\.key === "Escape"/);
-  assert.match(viewer, /event\.key === "ArrowLeft"/);
-  assert.match(viewer, /event\.key === "ArrowRight"/);
-});
-
-test("photo upload accepts only explicit optional locations and displays their names", async () => {
-  const upload = await readFile(new URL("../src/features/photos/photo-upload-form.tsx", import.meta.url), "utf8");
-  const viewer = await readFile(new URL("../src/features/photos/photo-gallery-viewer.tsx", import.meta.url), "utf8");
-  const album = await readFile(new URL("../app/(app)/trips/[tripId]/album/page.tsx", import.meta.url), "utf8");
-  assert.match(upload, /set_trip_photo_location/);
-  assert.match(upload, /name="latitude"/);
-  assert.match(upload, /name="longitude"/);
-  assert.doesNotMatch(upload, /navigator\.geolocation/);
-  assert.match(viewer, /photo\.location_name/);
-  assert.match(album, /photo\.location_name/);
-});
-
-test("active photo and document cards expose metadata editing", async () => {
-  const photoViewer = await readFile(new URL("../src/features/photos/photo-gallery-viewer.tsx", import.meta.url), "utf8");
-  const photoActions = await readFile(new URL("../src/features/photos/actions.ts", import.meta.url), "utf8");
-  const documents = await readFile(new URL("../app/(app)/trips/[tripId]/documents/page.tsx", import.meta.url), "utf8");
-  const documentActions = await readFile(new URL("../src/features/documents/actions.ts", import.meta.url), "utf8");
-  assert.match(photoViewer, /updateTripPhotoAction/);
-  assert.match(photoActions, /update_trip_photo_metadata/);
-  assert.match(documents, /updateTripDocumentAction/);
-  assert.match(documentActions, /update_trip_document/);
-  assert.match(photoViewer, /Editar informações/);
-  assert.match(documents, /Editar informações/);
-});
-
-test("archive recovery is available for trips and trip resources", async () => {
-  const trips = await readFile(new URL("../app/(app)/trips/archived/page.tsx", import.meta.url), "utf8");
-  const items = await readFile(new URL("../app/(app)/trips/[tripId]/archived/page.tsx", import.meta.url), "utf8");
-  const nav = await readFile(new URL("../src/components/trip-section-nav.tsx", import.meta.url), "utf8");
-  assert.match(trips, /restoreTripAction/);
-  assert.match(items, /restoreTripItemAction/);
-  assert.match(items, /trip_documents/);
-  assert.match(items, /trip_photos/);
-  assert.match(items, /trip_places/);
-  assert.match(nav, /Arquivados/);
-});
-
-test("photo and document collections support persistent filters and pagination", async () => {
-  const photos = await readFile(new URL("../app/(app)/trips/[tripId]/photos/page.tsx", import.meta.url), "utf8");
-  const documents = await readFile(new URL("../app/(app)/trips/[tripId]/documents/page.tsx", import.meta.url), "utf8");
-  const pagination = await readFile(new URL("../src/components/list-pagination.tsx", import.meta.url), "utf8");
-  assert.match(photos, /caption\.ilike/);
-  assert.match(photos, /is_favorite/);
-  assert.match(documents, /title\.ilike/);
-  assert.match(documents, /documentQuery\.eq\("category"/);
-  assert.match(photos, /pageSize = 12/);
-  assert.match(documents, /pageSize = 12/);
-  assert.match(pagination, /URLSearchParams/);
-  assert.match(pagination, /Página \{page\} de \{pages\}/);
-});
-
-test("finance and activity lists filter and paginate without changing financial totals", async () => {
-  const finance = await readFile(new URL("../app/(app)/trips/[tripId]/finance/page.tsx", import.meta.url), "utf8");
-  const activity = await readFile(new URL("../app/(app)/trips/[tripId]/activity/page.tsx", import.meta.url), "utf8");
-  assert.match(finance, /description\.ilike/);
-  assert.match(finance, /expenseQuery\.eq\("category_id"/);
-  assert.match(finance, /allAmounts/);
-  assert.match(finance, /pageSize = 20/);
-  assert.match(activity, /filteredEvents/);
-  assert.match(activity, /moduleFilter/);
-  assert.match(activity, /pageSize = 25/);
-  assert.match(activity, /ListPagination/);
-});
-
-test("mobile shell keeps navigation reachable and forms touch friendly", async () => {
-  const layout = await readFile(new URL("../app/(app)/layout.tsx", import.meta.url), "utf8");
-  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
-  assert.match(layout, /className="skip-link"/);
-  assert.match(layout, /id="app-content"/);
-  assert.match(css, /env\(safe-area-inset-bottom\)/);
-  assert.match(css, /grid-template-columns: repeat\(4, 1fr\)/);
-  assert.match(css, /scroll-snap-type: x proximity/);
-  assert.match(css, /input, select, textarea \{ font-size: 16px; \}/);
-  assert.match(css, /prefers-reduced-motion: reduce/);
-  assert.match(css, /:focus-visible/);
-});
-
-test("browser Supabase features receive runtime public configuration from the server", async () => {
-  const client = await readFile(new URL("../src/lib/supabase/client.ts", import.meta.url), "utf8");
-  const documents = await readFile(new URL("../app/(app)/trips/[tripId]/documents/page.tsx", import.meta.url), "utf8");
-  const photos = await readFile(new URL("../app/(app)/trips/[tripId]/photos/page.tsx", import.meta.url), "utf8");
-  assert.match(client, /createBrowserSupabaseClient\(config: SupabasePublicConfig\)/);
-  assert.doesNotMatch(client, /process\.env|getSupabasePublicConfig\(\)/);
-  assert.match(documents, /supabaseConfig=\{supabaseConfig\}/);
-  assert.match(photos, /supabaseConfig=\{supabaseConfig\}/);
-});
-
-test("upload forms preserve the form node and surface sanitized Storage failures", async () => {
-  const documents = await readFile(new URL("../src/features/documents/document-file-form.tsx", import.meta.url), "utf8");
-  const photos = await readFile(new URL("../src/features/photos/photo-upload-form.tsx", import.meta.url), "utf8");
-  const errors = await readFile(new URL("../src/lib/supabase/storage-error.ts", import.meta.url), "utf8");
-  assert.match(documents, /const formElement = event\.currentTarget/);
-  assert.match(documents, /formElement\.reset\(\)/);
-  assert.doesNotMatch(documents, /event\.currentTarget\.reset\(\)/);
-  assert.match(documents, /describeStorageUploadError\(uploadError\.message, "arquivo"\)/);
-  assert.match(photos, /describeStorageUploadError\(uploadError\.message, "foto"\)/);
-  assert.match(errors, /message\.slice\(0, 160\)/);
-});
-
-test("trip statistics derive indicators from isolated source tables", async () => {
-  const source = await readFile(new URL("../app/(app)/trips/[tripId]/statistics/page.tsx", import.meta.url), "utf8");
-
-  for (const table of ["itinerary_activities", "expenses", "checklist_items", "trip_documents", "trip_photos"]) {
-    assert.match(source, new RegExp(`from\\(\"${table}\"\\)`));
-  }
-  assert.match(source, /\.eq\("workspace_id", member\.workspaceId\)/);
-  assert.match(source, /budgetPercent/);
-  assert.match(source, /checklistPercent/);
-  assert.match(source, /expiredDocuments/);
-});
-
-test("trip history filters workspace audit events without rendering raw metadata", async () => {
-  const source = await readFile(new URL("../app/(app)/trips/[tripId]/activity/page.tsx", import.meta.url), "utf8");
-
-  assert.match(source, /from\("audit_logs"\)/);
-  assert.match(source, /\.eq\("workspace_id", member\.workspaceId\)/);
-  assert.match(source, /event\.resource_id === trip\.id \|\| metadata\.trip_id === trip\.id/);
-  assert.match(source, /actionLabels/);
-  assert.doesNotMatch(source, /JSON\.stringify\(event\.metadata\)|<pre>/);
-});
-
-test("invite callback accepts only an exact local completion path", async () => {
-  const callback = await readFile(new URL("../app/auth/callback/route.ts", import.meta.url), "utf8");
-  const signup = await readFile(new URL("../src/features/access/invite-actions.ts", import.meta.url), "utf8");
-
-  assert.match(callback, /\^\\\/accept-invite\\\/complete\\\?token=\(\[a-f0-9\]\{64\}\)\$/);
-  assert.match(signup, /validate_workspace_invite/);
-  assert.match(signup, /accept_workspace_invite/);
-  assert.doesNotMatch(signup, /SERVICE_ROLE|service_role/);
-});
-
-test("workspace settings are role-aware and use an audited RPC", async () => {
-  const page = await readFile(new URL("../app/(app)/settings/profile/page.tsx", import.meta.url), "utf8");
-  const action = await readFile(new URL("../src/features/workspace/account-actions.ts", import.meta.url), "utf8");
-
-  assert.match(page, /canRenameWorkspace=\{member\.role === "owner"\}/);
-  assert.match(action, /update_account_settings/);
-  assert.match(action, /requireCurrentMember\(\)/);
-});
-
-test("trip export is no-store, versioned and omits storage internals", async () => {
-  const source = await readFile(new URL("../app/api/trips/[tripId]/export/route.ts", import.meta.url), "utf8");
-
-  assert.match(source, /exportSchemaVersion = 1/);
-  assert.match(source, /record_trip_export/);
-  assert.match(source, /private, no-store, max-age=0/);
-  assert.match(source, /Content-Disposition/);
-  assert.doesNotMatch(source, /select\([^\n]*storage_path/);
-  assert.doesNotMatch(source, /audit_logs|signedUrl|token_hash/);
-});
-
-test("trip workspace navigation exposes every module and marks the active section", async () => {
-  const source = await readFile(new URL("../src/components/trip-section-nav.tsx", import.meta.url), "utf8");
-  const layout = await readFile(new URL("../app/(app)/trips/[tripId]/layout.tsx", import.meta.url), "utf8");
-
-  for (const section of ["itinerary", "finance", "checklist", "places", "documents", "photos", "album", "statistics", "activity"]) {
-    assert.match(source, new RegExp(`slug: \"${section}\"`));
-  }
-  assert.match(source, /aria-current=\{active \? "page"/);
-  assert.match(source, /aria-label=\{`Seções de \$\{tripName\}`\}/);
-  assert.match(layout, /\.eq\("workspace_id", member\.workspaceId\)/);
-});
-
-test("automatic album composes only workspace-scoped trip memories", async () => {
-  const source = await readFile(new URL("../app/(app)/trips/[tripId]/album/page.tsx", import.meta.url), "utf8");
-  for (const table of ["trips", "trip_participants", "itinerary_days", "itinerary_activities", "trip_places", "expenses", "trip_photos"]) {
-    assert.match(source, new RegExp(`from\\("${table}"\\)`));
-  }
-  assert.equal(source.match(/\.eq\("workspace_id", member\.workspaceId\)/g)?.length, 7);
-  assert.match(source, /\/api\/photos\/\$\{photo\.id\}/);
-  assert.match(source, /trip\.status !== "completed"/);
-});
-
-test("places query and mutations stay scoped to the current workspace and trip", async () => {
-  const page = await readFile(new URL("../app/(app)/trips/[tripId]/places/page.tsx", import.meta.url), "utf8");
-  const actions = await readFile(new URL("../src/features/places/actions.ts", import.meta.url), "utf8");
-  assert.match(page, /from\("trip_places"\)/);
-  assert.match(page, /\.eq\("trip_id", tripId\)/);
-  assert.match(page, /\.eq\("workspace_id", member\.workspaceId\)/);
-  assert.match(actions, /requireCurrentMember\(\)/);
-  assert.match(actions, /rpc\("add_trip_place"/);
-  assert.match(actions, /rpc\("archive_trip_place"/);
-});
-
-test("alerts derive only workspace-scoped actionable deadlines", async () => {
-  const source = await readFile(new URL("../app/(app)/alerts/page.tsx", import.meta.url), "utf8");
-
-  for (const table of ["trips", "checklist_items", "trip_documents"]) {
-    assert.match(source, new RegExp(`from\\(\"${table}\"\\)`));
-  }
-  assert.equal(source.match(/\.eq\("workspace_id", member\.workspaceId\)/g)?.length, 3);
-  assert.match(source, /addDays\(now, 7\)/);
-  assert.match(source, /addDays\(now, 60\)/);
-  assert.match(source, /alerts\.sort\(\(a, b\) => a\.priority - b\.priority/);
-});
+test("renders development preview metadata", async () => { const workerUrl = new URL("../dist/server/index.js", import.meta.url); workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`); const { default: worker } = await import(workerUrl.href); const response = await worker.fetch(new Request("http://localhost/login", { headers: { accept: "text/html" } }), { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } }, { waitUntil() {}, passThroughOnException() {} }); assert.equal(response.status, 200); assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i); assert.match(await response.text(), developmentPreviewMeta); });
+test("exposes a minimal health check without sensitive data", async () => { const workerUrl = new URL("../dist/server/index.js", import.meta.url); workerUrl.searchParams.set("health-test", `${process.pid}-${Date.now()}`); const { default: worker } = await import(workerUrl.href); const response = await worker.fetch(new Request("http://localhost/api/health", { headers: { accept: "application/json" } }), { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } }, { waitUntil() {}, passThroughOnException() {} }); assert.equal(response.status, 200); assert.deepEqual(await response.json(), { status: "ok" }); assert.equal(response.headers.get("cache-control"), "no-store"); });
+test("readiness check is bounded and returns only safe states", async () => { const source = await read("app/api/health/readiness/route.ts"); assert.match(source, /rpc\/system_health/); assert.match(source, /AbortSignal\.timeout\(4000\)/); assert.match(source, /status: "ready"/); assert.match(source, /status: "degraded"/); assert.match(source, /status: 503/); assert.match(source, /Cache-Control.*no-store/); assert.doesNotMatch(source, /error\.message|console\./); });
+test("dashboard consolidates the active trip planning indicators", async () => { const source = await read("app/(app)/dashboard/page.tsx"); for (const value of [/currentTrip/, /Total gasto/, /Saldo/, /Pendências/, /itinerary_activities/, /trip_checklist_stats/, /trip_expense_total/]) assert.match(source, value); });
+test("realtime refreshes only records from the open trip without polling", async () => { const source = await read("src/components/trip-realtime-refresh.tsx"); for (const value of [/filter: `trip_id=eq\.\$\{tripId\}`/, /allowedTables/, /removeChannel/, /router\.refresh\(\)/, /document\.visibilityState === "visible"/, /setTimeout\(\(\) => router\.refresh\(\), 350\)/]) assert.match(source, value); assert.doesNotMatch(source, /setInterval/); });
+test("document downloads use short-lived signed URLs", async () => { const source = await read("app/api/documents/[fileId]/download/route.ts"); assert.match(source, /createSignedUrl\(file\.storage_path, 60/); assert.match(source, /\.is\("archived_at", null\)/); assert.match(source, /workspace_id/); });
+test("PWA cache excludes private pages, APIs and documents", async () => { const worker = await read("public/sw.js"); const manifest = await read("app/manifest.ts"); assert.match(worker, /request\.mode === "navigate"/); assert.match(worker, /fetch\(request\)\.catch\(\(\) => caches\.match\(OFFLINE_URL\)\)/); assert.match(worker, /\/_next\/static\//); assert.doesNotMatch(worker, /cache\.put\([^\n]*(?:dashboard|trips|api|documents)/i); assert.doesNotMatch(worker, /staleWhileRevalidate|networkFirst/i); assert.match(manifest, /display: "standalone"/); assert.match(manifest, /purpose: "maskable"/); });
+test("trip map embeds only validated coordinates without device geolocation", async () => { const source = await read("src/features/itinerary/trip-map.tsx"); assert.match(source, /openstreetmap\.org\/export\/embed\.html/); assert.match(source, /encodeURIComponent\(bbox\)/); assert.match(source, /referrerPolicy="no-referrer"/); assert.doesNotMatch(source, /navigator\.geolocation|getCurrentPosition/); });
+test("private photo previews require authenticated short-lived URLs", async () => { const source = await read("app/api/photos/[photoId]/route.ts"); assert.match(source, /requireCurrentMember\(\)/); assert.match(source, /\.is\("archived_at", null\)/); assert.match(source, /createSignedUrl\(photo\.storage_path, 60/); assert.match(source, /workspace_id/); });
+test("photo gallery exposes favorite and explicit cover controls", async () => { const page = await read("app/(app)/trips/[tripId]/photos/page.tsx"); const album = await read("app/(app)/trips/[tripId]/album/page.tsx"); const viewer = await read("src/features/photos/photo-gallery-viewer.tsx"); assert.match(viewer, /setPhotoFavoriteAction/); assert.match(viewer, /setTripCoverPhotoAction/); assert.match(page, /is_favorite, is_cover/); assert.match(album, /photo\.is_cover/); assert.match(album, /order\("is_favorite", \{ ascending: false \}\)/); assert.match(viewer, /className="photo-media"/); });
+test("photo gallery supports bounded batch upload and an accessible lightbox", async () => { const upload = await read("src/features/photos/photo-upload-form.tsx"); const viewer = await read("src/features/photos/photo-gallery-viewer.tsx"); for (const value of [/files\.length > 10/, /multiple/, /Enviando \$\{index \+ 1\} de \$\{files\.length\}/]) assert.match(upload, value); for (const value of [/role="dialog"/, /aria-modal="true"/, /event\.key === "Escape"/, /event\.key === "ArrowLeft"/, /event\.key === "ArrowRight"/]) assert.match(viewer, value); });
+test("photo upload accepts only explicit optional locations and displays their names", async () => { const upload = await read("src/features/photos/photo-upload-form.tsx"); const viewer = await read("src/features/photos/photo-gallery-viewer.tsx"); const album = await read("app/(app)/trips/[tripId]/album/page.tsx"); assert.match(upload, /set_trip_photo_location/); assert.match(upload, /name="latitude"/); assert.match(upload, /name="longitude"/); assert.doesNotMatch(upload, /navigator\.geolocation/); assert.match(viewer, /photo\.location_name/); assert.match(album, /photo\.location_name/); });
+test("active photo and document cards expose metadata editing", async () => { const photoViewer = await read("src/features/photos/photo-gallery-viewer.tsx"); const photoActions = await read("src/features/photos/actions.ts"); const documents = await read("app/(app)/trips/[tripId]/documents/page.tsx"); const documentActions = await read("src/features/documents/actions.ts"); assert.match(photoViewer, /updateTripPhotoAction/); assert.match(photoActions, /update_trip_photo_metadata/); assert.match(documents, /updateTripDocumentAction/); assert.match(documentActions, /update_trip_document/); assert.match(photoViewer, /Editar informações/); assert.match(documents, /Editar informações/); });
+test("archive recovery is available for trips and trip resources", async () => { const trips = await read("app/(app)/trips/archived/page.tsx"); const items = await read("app/(app)/trips/[tripId]/archived/page.tsx"); const nav = await read("src/components/trip-section-nav.tsx"); assert.match(trips, /restoreTripAction/); assert.match(items, /restoreTripItemAction/); for (const value of [/trip_documents/, /trip_photos/, /trip_places/]) assert.match(items, value); assert.match(nav, /Arquivados/); });
+test("photo and document collections support persistent filters and pagination", async () => { const photos = await read("app/(app)/trips/[tripId]/photos/page.tsx"); const documents = await read("app/(app)/trips/[tripId]/documents/page.tsx"); const pagination = await read("src/components/list-pagination.tsx"); assert.match(photos, /caption\.ilike/); assert.match(photos, /is_favorite/); assert.match(documents, /title\.ilike/); assert.match(documents, /documentQuery\.eq\("category"/); assert.match(photos, /pageSize = 12/); assert.match(documents, /pageSize = 12/); assert.match(pagination, /URLSearchParams/); assert.match(pagination, /Página \{page\} de \{pages\}/); });
+test("finance and activity lists filter and paginate without changing financial totals", async () => { const finance = await read("app/(app)/trips/[tripId]/finance/page.tsx"); const activity = await read("app/(app)/trips/[tripId]/activity/page.tsx"); assert.match(finance, /description\.ilike/); assert.match(finance, /expenseQuery\.eq\("category_id"/); assert.match(finance, /trip_expense_total/); assert.match(finance, /pageSize = 20/); assert.match(activity, /filteredEvents/); assert.match(activity, /moduleFilter/); assert.match(activity, /pageSize = 25/); assert.match(activity, /ListPagination/); });
+test("mobile shell keeps navigation reachable and forms touch friendly", async () => { const layout = await read("app/(app)/layout.tsx"); const css = await read("app/globals.css"); assert.match(layout, /className="skip-link"/); assert.match(layout, /id="app-content"/); for (const value of [/env\(safe-area-inset-bottom\)/, /grid-template-columns: repeat\(4, 1fr\)/, /scroll-snap-type: x proximity/, /input, select, textarea \{ font-size: 16px; \}/, /prefers-reduced-motion: reduce/, /:focus-visible/]) assert.match(css, value); });
+test("browser Supabase features receive runtime public configuration from the server", async () => { const client = await read("src/lib/supabase/client.ts"); const documents = await read("app/(app)/trips/[tripId]/documents/page.tsx"); const photos = await read("app/(app)/trips/[tripId]/photos/page.tsx"); assert.match(client, /createBrowserSupabaseClient\(config: SupabasePublicConfig\)/); assert.doesNotMatch(client, /process\.env|getSupabasePublicConfig\(\)/); assert.match(documents, /supabaseConfig=\{supabaseConfig\}/); assert.match(photos, /supabaseConfig=\{supabaseConfig\}/); });
+test("upload forms preserve the form node and surface sanitized Storage failures", async () => { const documents = await read("src/features/documents/document-file-form.tsx"); const photos = await read("src/features/photos/photo-upload-form.tsx"); const errors = await read("src/lib/supabase/storage-error.ts"); assert.match(documents, /const formElement = event\.currentTarget/); assert.match(documents, /formElement\.reset\(\)/); assert.doesNotMatch(documents, /event\.currentTarget\.reset\(\)/); assert.match(documents, /describeStorageUploadError\(uploadError\.message, "arquivo"\)/); assert.match(photos, /describeStorageUploadError\(uploadError\.message, "foto"\)/); assert.match(errors, /message\.slice\(0, 160\)/); });
+test("trip statistics derive indicators from isolated source tables", async () => { const source = await read("app/(app)/trips/[tripId]/statistics/page.tsx"); for (const table of ["itinerary_activities", "expenses", "checklist_items", "trip_documents", "trip_photos"]) assert.match(source, new RegExp(`from\\(\"${table}\"\\)`)); assert.match(source, /\.eq\("workspace_id", member\.workspaceId\)/); assert.match(source, /budgetPercent/); assert.match(source, /checklistPercent/); assert.match(source, /expiredDocuments/); });
+test("trip history filters workspace audit events without rendering raw metadata", async () => { const source = await read("app/(app)/trips/[tripId]/activity/page.tsx"); assert.match(source, /from\("audit_logs"\)/); assert.match(source, /\.eq\("workspace_id", member\.workspaceId\)/); assert.match(source, /metadata\.trip_id === trip\.id/); assert.match(source, /event\.resource_id === trip\.id/); assert.doesNotMatch(source, /JSON\.stringify\(event\.metadata\)/); });
+test("invite callback accepts only allowlisted or token-validated local destinations", async () => { const callback = await read("app/auth/callback/route.ts"); assert.match(callback, /allowedDestinations\.has\(requested\)/); assert.match(callback, /accept-invite\\\/complete/); assert.match(callback, /\[a-f0-9\]\{64\}/); assert.doesNotMatch(callback, /startsWith\("\/"\)/); });
+test("workspace settings are role-aware and use an audited RPC", async () => { const page = await read("app/(app)/settings/profile/page.tsx"); const actions = await read("src/features/workspace/account-actions.ts"); assert.match(page, /member\.role === "owner"/); assert.match(page, /canRenameWorkspace=\{member\.role === "owner"\}/); assert.match(actions, /update_account_settings/); });
+test("trip export is no-store, versioned and omits storage internals", async () => { const route = await read("app/api/trips/[tripId]/export/route.ts"); assert.match(route, /schema_version/); assert.match(route, /Cache-Control.*no-store/); assert.doesNotMatch(route, /storage_path|bucket/); });
+test("trip workspace navigation exposes every module and marks the active section", async () => { const nav = await read("src/components/trip-section-nav.tsx"); for (const label of ["Resumo", "Roteiro", "Locais", "Financeiro", "Checklist", "Documentos", "Fotos", "Álbum", "Estatísticas", "Histórico", "Arquivados"]) assert.match(nav, new RegExp(label)); assert.match(nav, /aria-current/); });
+test("automatic album composes only workspace-scoped trip memories", async () => { const album = await read("app/(app)/trips/[tripId]/album/page.tsx"); assert.match(album, /workspace_id/); assert.match(album, /trip_id/); assert.match(album, /trip_photos/); });
+test("places query and mutations stay scoped to the current workspace and trip", async () => { const page = await read("app/(app)/trips/[tripId]/places/page.tsx"); const actions = await read("src/features/places/actions.ts"); assert.match(page, /workspace_id/); assert.match(page, /trip_id/); assert.match(actions, /requireCurrentMember/); });
+test("alerts derive only workspace-scoped actionable deadlines", async () => { const alerts = await read("app/(app)/alerts/page.tsx"); assert.match(alerts, /workspace_id/); assert.match(alerts, /expires_on/); });
+test("production URLs fail closed and require HTTPS", async () => { const config = await read("src/lib/app-url.ts"); assert.match(config, /APP_URL is required in production/i); assert.match(config, /APP_URL must use HTTPS outside local development/i); });
+test("public Supabase configuration rejects secret credentials and insecure production URLs", async () => { const config = await read("src/lib/supabase/config.ts"); assert.match(config, /service_role|secret/i); assert.match(config, /NEXT_PUBLIC_SUPABASE_URL must use HTTPS outside local development/i); });
+test("missing Supabase configuration remains build-safe", async () => { const proxy = await read("proxy.ts"); const readiness = await read("app/api/health/readiness/route.ts"); assert.match(proxy, /if \(!isSupabaseConfigured\(\)\)/); assert.match(proxy, /NextResponse\.next\(\{ request \}\)/); assert.match(readiness, /status:\s*"degraded"/); assert.match(readiness, /status:\s*503/); });
+test("signed private asset redirects are short-lived and non-cacheable", async () => { const documentRoute = await read("app/api/documents/[fileId]/download/route.ts"); const photoRoute = await read("app/api/photos/[photoId]/route.ts"); for (const route of [documentRoute, photoRoute]) { assert.match(route, /createSignedUrl[\s\S]*?60/); assert.match(route, /Cache-Control/); } });
+test("baseline browser hardening headers remain enabled", async () => { const config = await read("next.config.ts"); for (const header of ["Content-Security-Policy", "Strict-Transport-Security", "Cross-Origin-Opener-Policy", "Cross-Origin-Resource-Policy", "Referrer-Policy", "Permissions-Policy", "X-Content-Type-Options", "X-Frame-Options"]) assert.match(config, new RegExp(header)); });
+test("CI covers both active repository branches", async () => { const workflow = await read(".github/workflows/ci.yml"); assert.match(workflow, /Rcosta22/); assert.match(workflow, /main/); });

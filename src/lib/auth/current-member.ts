@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/src/lib/supabase/server";
 
@@ -8,7 +9,7 @@ export type CurrentMember = {
   role: "owner" | "admin";
 };
 
-export async function requireCurrentMember(): Promise<CurrentMember> {
+export const requireCurrentMember = cache(async (): Promise<CurrentMember> => {
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
@@ -42,4 +43,4 @@ export async function requireCurrentMember(): Promise<CurrentMember> {
     workspaceId: membership.workspace_id,
     role: membership.role,
   };
-}
+});

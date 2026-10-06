@@ -30,7 +30,7 @@ export function TripRealtimeRefresh({ tripId, tables, supabaseConfig }: TripReal
     let refreshTimer: ReturnType<typeof setTimeout> | undefined;
     const scheduleRefresh = () => {
       if (refreshTimer) clearTimeout(refreshTimer);
-      refreshTimer = setTimeout(() => router.refresh(), 250);
+      refreshTimer = setTimeout(() => router.refresh(), 350);
     };
     let channel = supabase.channel(`trip:${tripId}:${selectedTables.join("-")}`);
 
@@ -43,16 +43,16 @@ export function TripRealtimeRefresh({ tripId, tables, supabaseConfig }: TripReal
     }
     channel.subscribe();
 
-    // Some managed browsers can keep the Realtime socket connected while
-    // delaying postgres_changes delivery. A bounded visible-page refresh keeps
-    // the shared trip convergent without polling private data in the background.
-    const fallbackTimer = setInterval(() => {
-      if (document.visibilityState === "visible") router.refresh();
-    }, 4000);
+    // Reconcile once when the user returns to the tab instead of forcing a
+    // complete Server Component refresh every few seconds while they use it.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") scheduleRefresh();
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       if (refreshTimer) clearTimeout(refreshTimer);
-      clearInterval(fallbackTimer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       void supabase.removeChannel(channel);
     };
   }, [router, supabaseConfig, tableKey, tripId]);
